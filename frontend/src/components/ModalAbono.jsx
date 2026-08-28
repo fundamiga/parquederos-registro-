@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale';
 import { crearAbono } from '../services/abonosService';
 
 export default function ModalAbono({ moto, onClose, onCreado }) {
-  const [tipo, setTipo] = useState('quincenal');
+  const [tipo, setTipo] = useState('quincenal'); // 'semanal', 'quincenal', 'mensual'
   const [monto, setMonto] = useState('7000');
   const [estadoPago, setEstadoPago] = useState('al_vencer'); // 'adelantado' o 'al_vencer'
   const [observaciones, setObservaciones] = useState('');
@@ -14,9 +14,15 @@ export default function ModalAbono({ moto, onClose, onCreado }) {
   const horaActual = format(ahora, 'hh:mm a', { locale: es });
   const fechaActual = format(ahora, 'dd/MM/yyyy');
   const fechaInicio = format(ahora, 'yyyy-MM-dd');
-  const fechaFin = format(tipo === 'mensual' ? addMonths(ahora, 1) : addDays(ahora, 15), 'yyyy-MM-dd');
-  const fechaFinDisplay = format(tipo === 'mensual' ? addMonths(ahora, 1) : addDays(ahora, 15), "dd 'de' MMMM yyyy", { locale: es });
-  const dias = tipo === 'mensual' ? 30 : 15;
+
+  const dias = tipo === 'mensual' ? 30 : (tipo === 'semanal' ? 7 : 15);
+  const getFechaFin = () => {
+    if (tipo === 'mensual') return addMonths(ahora, 1);
+    if (tipo === 'semanal') return addDays(ahora, 7);
+    return addDays(ahora, 15);
+  };
+  const fechaFin = format(getFechaFin(), 'yyyy-MM-dd');
+  const fechaFinDisplay = format(getFechaFin(), "dd 'de' MMMM yyyy", { locale: es });
 
   const setPreset = (t, val) => {
     setTipo(t);
@@ -65,7 +71,7 @@ export default function ModalAbono({ moto, onClose, onCreado }) {
           </div>
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-tight">
-              Activar Plan Quincenal / Mensual
+              Activar Plan Semanal / Quincenal / Mes
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Inicia el conteo de días desde hoy
@@ -99,36 +105,53 @@ export default function ModalAbono({ moto, onClose, onCreado }) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           
-          {/* Tipo de Período */}
+          {/* Tipo de Período: Semanal, Quincenal o Mensual */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">
               1. Selecciona la Duración
             </label>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
+              
+              {/* Semanal */}
+              <button
+                type="button"
+                onClick={() => setPreset('semanal', '3500')}
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  tipo === 'semanal'
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300 ring-2 ring-purple-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <span>🟣 Semana (7d)</span>
+                <span className="text-sm font-black text-purple-600 dark:text-purple-400">$3.500</span>
+              </button>
+
+              {/* Quincenal */}
               <button
                 type="button"
                 onClick={() => setPreset('quincenal', '7000')}
-                className={`py-3 px-3 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
                   tipo === 'quincenal'
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20 dark:ring-emerald-500/30'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                <span>🗓️ Quincena (15 días)</span>
-                <span className="text-base font-black text-emerald-600 dark:text-emerald-400">$7.000 COP</span>
+                <span>🗓️ Quincena (15d)</span>
+                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">$7.000</span>
               </button>
 
+              {/* Mensual */}
               <button
                 type="button"
                 onClick={() => setPreset('mensual', '14000')}
-                className={`py-3 px-3 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
                   tipo === 'mensual'
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20 dark:ring-emerald-500/30'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                <span>📅 Mes (30 días)</span>
-                <span className="text-base font-black text-emerald-600 dark:text-emerald-400">$14.000 COP</span>
+                <span>📅 Mes (30d)</span>
+                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">$14.000</span>
               </button>
             </div>
           </div>
@@ -216,7 +239,7 @@ export default function ModalAbono({ moto, onClose, onCreado }) {
             <textarea
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Ej: Acordado con el propietario"
+              placeholder="Ej: Plan semanal acordado con trabajador"
               rows={2}
               className="input text-xs resize-none"
             />

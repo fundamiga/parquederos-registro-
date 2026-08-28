@@ -18,8 +18,8 @@ const crear = async (req, res) => {
   const { moto_id, tipo, fecha_inicio, fecha_fin, monto, observaciones, estado_pago } = req.body;
   if (!moto_id || !tipo || !fecha_inicio || !fecha_fin || !monto)
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
-  if (!['mensual', 'quincenal'].includes(tipo))
-    return res.status(400).json({ error: 'Tipo debe ser mensual o quincenal' });
+  if (!['mensual', 'quincenal', 'semanal'].includes(tipo))
+    return res.status(400).json({ error: 'Tipo debe ser mensual, quincenal o semanal' });
 
   // hora_pago / hora_inicio: la hora exacta en que se registra el plan
   const hora_pago = new Date().toISOString();
