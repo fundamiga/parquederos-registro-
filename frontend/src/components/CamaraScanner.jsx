@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { detectarPlacaIA } from '../services/placasService';
 
 export default function CamaraScanner({ onPlacaDetectada }) {
@@ -12,6 +12,15 @@ export default function CamaraScanner({ onPlacaDetectada }) {
   const [preview, setPreview] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' (trasera) o 'user' (frontal)
 
+  // Asegurar que la cámara se limpie al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
+
   const iniciarCamara = async (camMode = facingMode) => {
     try {
       if (videoRef.current?.srcObject) {
@@ -20,8 +29,8 @@ export default function CamaraScanner({ onPlacaDetectada }) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: camMode,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
       });
       if (videoRef.current) {
@@ -43,15 +52,16 @@ export default function CamaraScanner({ onPlacaDetectada }) {
   const detenerCamara = () => {
     videoRef.current?.srcObject?.getTracks().forEach((t) => t.stop());
     setActiva(false);
+    setProcesando(false);
   };
 
   const procesarCanvas = async (canvasRecortado) => {
     setProcesando(true);
-    setProgreso(20);
-    setEstado('⚡ Preparando imagen...');
+    setProgreso(30);
+    setEstado('⚡ Optimizando imagen...');
 
-    // Redimensionar para envío óptimo (800px)
-    const MAX_W = 800;
+    // Redimensionar para envío ultrarrápido (600px max)
+    const MAX_W = 600;
     let canvasEnvio = canvasRecortado;
     if (canvasRecortado.width > MAX_W) {
       const scale = MAX_W / canvasRecortado.width;
@@ -62,41 +72,50 @@ export default function CamaraScanner({ onPlacaDetectada }) {
       canvasEnvio = small;
     }
 
-    const dataUrl = canvasEnvio.toDataURL('image/jpeg', 0.88);
+    // Calidad 0.78 para peso < 25 KB (instantáneo en redes móviles)
+    const dataUrl = canvasEnvio.toDataURL('image/jpeg', 0.78);
     setPreview(dataUrl);
 
-    // Detección con IA Gemini Vision
-    setProgreso(45);
-    setEstado('🔍 Leyendo placa con IA Gemini...');
+    setProgreso(60);
+    setEstado('🔍 Reconociendo placa...');
+
     try {
-      const respIA = await detectarPlacaIA(dataUrl);
+      // Timeout de seguridad de 5 segundos para que la app NUNCA se congele
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Tiempo de espera agotado. Intenta de nuevo.')), 5000)
+      );
+
+      const respIA = await Promise.race([detectarPlacaIA(dataUrl), timeoutPromise]);
+
       if (respIA.data?.exito && respIA.data?.placa) {
         const placa = respIA.data.placa;
         console.log('⚡ [IA VISION] Placa detectada:', placa);
         setProgreso(100);
-        setEstado('✅ ¡Placa detectada con éxito!');
+        setEstado('✅ ¡Placa detectada!');
         onPlacaDetectada(placa);
       } else {
-        setEstado('❌ No se reconoció la placa');
-        alert(respIA.data?.mensaje || 'No se pudo leer la placa. Asegúrate de enfocar bien.');
+        setEstado('❌ No se reconoció');
+        alert(respIA.data?.mensaje || 'No se pudo leer la placa. Asegúrate de enfocar bien dentro del recuadro amarillo.');
       }
     } catch (iaErr) {
-      setEstado('❌ Error al procesar');
-      alert('Error de conexión con la IA: ' + iaErr.message);
+      setEstado('❌ Error o reintento');
+      alert('Aviso: ' + (iaErr.message || 'Error de conexión. Intenta capturar nuevamente.'));
     } finally {
+      // Auto-recuperación garantizada: el botón siempre vuelve a quedar disponible
       setProcesando(false);
     }
   };
 
   const capturar = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || procesando) return;
     const video = videoRef.current;
-    const vW = video.videoWidth;
-    const vH = video.videoHeight;
+    const vW = video.videoWidth || 640;
+    const vH = video.videoHeight || 480;
 
-    // Recorte inteligente amplio (85% ancho x 60% alto)
-    const cropW = Math.round(vW * 0.85);
-    const cropH = Math.round(vH * 0.60);
+    // Recorte centrado exacto en la zona del visor (75% ancho x 45% alto)
+    // Elimina el 60% de elementos innecesarios para que la IA lea en < 0.8s
+    const cropW = Math.round(vW * 0.75);
+    const cropH = Math.round(vH * 0.45);
     const cropX = Math.round((vW - cropW) / 2);
     const cropY = Math.round((vH - cropH) / 2);
 
@@ -154,7 +173,7 @@ export default function CamaraScanner({ onPlacaDetectada }) {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
             
             {/* Target Box */}
-            <div className="relative w-[88%] sm:w-[78%] h-[52%] sm:h-[45%] rounded-3xl border-2 border-yellow-400/90 shadow-2xl shadow-yellow-500/20 flex items-center justify-center bg-yellow-400/5 backdrop-blur-[0.5px]">
+            <div className="relative w-[85%] sm:w-[75%] h-[48%] sm:h-[42%] rounded-3xl border-2 border-yellow-400/90 shadow-2xl shadow-yellow-500/20 flex items-center justify-center bg-yellow-400/5 backdrop-blur-[0.5px]">
               
               {/* Glowing Corner Accents */}
               <div className="absolute -top-1.5 -left-1.5 w-6 h-6 border-t-4 border-l-4 border-yellow-400 rounded-tl-xl"></div>

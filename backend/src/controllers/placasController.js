@@ -25,11 +25,7 @@ const detectarIA = async (req, res) => {
       'gemini-3.1-flash-lite'
     ];
 
-    const PROMPT = 'Lee la placa colombiana de motocicleta o vehículo que aparece en la imagen. ' +
-      'Formato moto: 3 letras + 2 números + 1 letra (ejemplo: SGV40F). ' +
-      'Formato carro: 3 letras + 3 números (ejemplo: ABC123). ' +
-      'Devuelve ÚNICAMENTE los 6 caracteres de la placa en mayúsculas, sin espacios, puntos ni guiones (ej: SGV40F). ' +
-      'Si no hay ninguna placa visible, responde NONE.';
+    const PROMPT = 'Lee la placa colombiana en la imagen (3 letras + 2 numeros + 1 letra, ej: SGV40F). Devuelve SOLO los 6 caracteres en mayusculas sin espacios. Si no hay placa responde NONE.';
 
     const payload = {
       contents: [{
@@ -38,7 +34,7 @@ const detectarIA = async (req, res) => {
           { inline_data: { mime_type: mimeType, data: base64Data } }
         ]
       }],
-      generationConfig: { maxOutputTokens: 20, temperature: 0 }
+      generationConfig: { maxOutputTokens: 10, temperature: 0, topK: 1 }
     };
 
     let placaEncontrada = '';
@@ -48,7 +44,7 @@ const detectarIA = async (req, res) => {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
+        const timeout = setTimeout(() => controller.abort(), 4000);
 
         const resp = await fetch(url, {
           method: 'POST',
@@ -65,7 +61,7 @@ const detectarIA = async (req, res) => {
 
           if (raw && raw !== 'NONE' && raw.length >= 5) {
             placaEncontrada = raw.slice(0, 6);
-            console.log(`⚡ [IA GEMINI (${m})] Placa detectada con éxito:`, placaEncontrada);
+            console.log(`⚡ [IA GEMINI (${m})] Placa detectada:`, placaEncontrada);
             break;
           }
         } else {
@@ -80,7 +76,7 @@ const detectarIA = async (req, res) => {
     if (placaEncontrada) {
       return res.json({ exito: true, placa: placaEncontrada, metodo: 'ia_vision' });
     } else {
-      return res.json({ exito: false, mensaje: 'No se pudo leer la placa con IA', error: ultimoError });
+      return res.json({ exito: false, mensaje: 'No se pudo leer la placa con IA. Intenta enfocarla mejor.', error: ultimoError });
     }
   } catch (error) {
     console.error('Error en detección IA:', error);
