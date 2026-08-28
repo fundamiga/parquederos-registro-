@@ -287,8 +287,45 @@ export default function ResultadoPlaca({
         </div>
       )}
 
-      {/* 4. DETALLE DE INGRESO ACTUAL (SI ESTÁ DENTRO DEL PARQUEADERO) */}
-      {estaAdentro && (
+      {/* 4. DETALLE DE INGRESO ACTUAL O PAGO DIARIO REGISTRADO */}
+      {resultado.pago_diario_hoy ? (
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-400 dark:border-emerald-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">✅</span>
+            <div>
+              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider block">
+                PAGO DIARIO AL DÍA ($700 COP)
+              </span>
+              <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm block mt-0.5">
+                • Registró su pago hoy a las {format(parseISO(resultado.entrada_hoy.hora_entrada), 'hh:mm a', { locale: es })}
+              </span>
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold block mt-0.5">
+                Trabajador con pago diario cubierto. No es necesario registrar hora de salida.
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {onVerTicket && (
+              <button
+                onClick={() => onVerTicket(resultado.entrada_hoy)}
+                className="btn-secondary py-2.5 px-4 text-xs font-black shrink-0"
+              >
+                <span>🎟️</span> Tiquete
+              </button>
+            )}
+            {resultado.entrada_activa && (
+              <button
+                onClick={() => onSalida(resultado.entrada_activa.id, 0, resultado.entrada_activa)}
+                disabled={cargando}
+                className="btn-secondary py-2.5 px-4 text-xs font-bold shrink-0 text-slate-500 hover:text-slate-700"
+              >
+                Salida Opcional
+              </button>
+            )}
+          </div>
+        </div>
+      ) : estaAdentro && (
         <div className="bg-sky-50 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-3xl">⏱️</span>
@@ -332,8 +369,8 @@ export default function ResultadoPlaca({
         </div>
       )}
 
-      {/* 5. BOTONES DE ACCIÓN DE ENTRADA (SI NO ESTÁ ADENTRO) */}
-      {!estaAdentro && (
+      {/* 5. BOTONES DE ACCIÓN DE ENTRADA (SI NO ESTÁ ADENTRO Y NO HA PAGADO EL DÍA) */}
+      {!estaAdentro && !resultado.pago_diario_hoy && (
         <div className="flex flex-col gap-3 pt-2">
           <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center sm:text-left">
             Selecciona el Tipo de Ingreso al Parqueadero:
@@ -362,7 +399,7 @@ export default function ResultadoPlaca({
               </span>
             </button>
 
-            {/* Opción 2: Visitante por Día ($700) */}
+            {/* Opción 2: Pago Diario ($700) */}
             <button
               onClick={() => onEntradaDia(placa, moto?.id)}
               disabled={cargando}
@@ -372,7 +409,7 @@ export default function ResultadoPlaca({
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🟡</span>
                   <span className="font-black text-sm block leading-tight">
-                    Visitante Día
+                    Pago Diario ($700)
                   </span>
                 </div>
                 <span className="font-black text-xs bg-slate-950 text-yellow-300 px-2 py-0.5 rounded-lg">
@@ -380,7 +417,7 @@ export default function ResultadoPlaca({
                 </span>
               </div>
               <span className="text-[10px] font-bold text-slate-900/80 block">
-                Tiquete y cobro al salir
+                Cancela el día (Sin salida)
               </span>
             </button>
 

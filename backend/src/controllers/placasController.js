@@ -161,12 +161,22 @@ const buscar = async (req, res) => {
     mensajeAlarma = '';
   }
 
-  // 3. Verificar si actualmente está adentro
+  // 3. Verificar si registró entrada hoy o está actualmente adentro
   const { data: entrada_activa } = await supabase
     .from('entradas')
     .select('*')
     .eq('moto_id', moto.id)
     .is('hora_salida', null)
+    .maybeSingle();
+
+  const { data: entrada_hoy } = await supabase
+    .from('entradas')
+    .select('*')
+    .eq('moto_id', moto.id)
+    .gte('hora_entrada', `${hoyStr}T00:00:00`)
+    .lte('hora_entrada', `${hoyStr}T23:59:59`)
+    .order('hora_entrada', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   res.json({
@@ -191,6 +201,8 @@ const buscar = async (req, res) => {
       dias_vencido: diasVencido
     },
     entrada_activa: entrada_activa || null,
+    entrada_hoy: entrada_hoy || null,
+    pago_diario_hoy: Boolean(entrada_hoy),
   });
 };
 
