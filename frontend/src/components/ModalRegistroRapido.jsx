@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { crearMoto, actualizarMoto } from '../services/motosService';
 import { crearAbono } from '../services/abonosService';
+import { registrarEntrada } from '../services/parqueaderoService';
 import { format, addDays, addMonths } from 'date-fns';
 
-export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose, onMotoCreada, onMotoActualizada }) {
+export default function ModalRegistroRapido({ placaInicial, motoInicial, planPorDefecto = 'diario', onClose, onMotoCreada, onMotoActualizada }) {
   const esEdicion = Boolean(motoInicial);
 
   const [placa, setPlaca] = useState(motoInicial?.placa || placaInicial || '');
@@ -12,15 +13,15 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
   const [marca, setMarca] = useState(motoInicial?.marca || '');
   const [modelo, setModelo] = useState(motoInicial?.modelo || '');
   
-  // Opción para asignar abono de una vez (solo si es nuevo registro)
-  const [asignarAbono, setAsignarAbono] = useState(!esEdicion);
-  const [tipoAbono, setTipoAbono] = useState('quincenal');
+  // Opción para asignar plan inicial (diario, semanal, quincenal o mensual)
+  const [asignarPlan, setAsignarPlan] = useState(!esEdicion);
+  const [tipoPlan, setTipoPlan] = useState(planPorDefecto || 'diario'); // 'diario', 'semanal', 'quincenal', 'mensual'
   const [cargando, setCargando] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!placa.trim() || !propietario.trim()) {
-      return alert('La Placa y el Nombre del Propietario son obligatorios');
+      return alert('La Placa y el Nombre del Trabajador/Propietario son obligatorios');
     }
 
     setCargando(true);
@@ -36,7 +37,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
         });
         if (onMotoActualizada) onMotoActualizada(respMoto.data);
       } else {
-        // 2. Crear nueva moto
+        // 2. Crear nueva moto con nombre
         const respMoto = await crearMoto({
           placa: placa.toUpperCase().trim(),
           propietario: propietario.trim(),
@@ -47,20 +48,40 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
 
         const nuevaMoto = respMoto.data;
 
-        // Si marcó asignar abono inicial
-        if (asignarAbono && nuevaMoto?.id) {
-          const hoy = new Date();
-          const fechaInicio = format(hoy, 'yyyy-MM-dd');
-          const fechaFin = format(tipoAbono === 'mensual' ? addMonths(hoy, 1) : addDays(hoy, 15), 'yyyy-MM-dd');
-          const monto = tipoAbono === 'mensual' ? 14000 : 7000;
+        // 3. Asignar el plan seleccionado
+        if (asignarPlan && nuevaMoto?.id) {
+          if (tipoPlan === 'diario') {
+            // Registrar entrada y cobro de día ($700) con nombre
+            await registrarEntrada({
+              moto_id: nuevaMoto.id,
+              placa: nuevaMoto.placa,
+              tipo_ingreso: 'dia',
+            });
+          } else {
+            const hoy = new Date();
+            const fechaInicio = format(hoy, 'yyyy-MM-dd');
+            let fechaFin;
+            let monto;
 
-          await crearAbono({
-            moto_id: nuevaMoto.id,
-            tipo: tipoAbono,
-            fecha_inicio: fechaInicio,
-            fecha_fin: fechaFin,
-            monto: monto,
-          });
+            if (tipoPlan === 'semanal') {
+              fechaFin = format(addDays(hoy, 7), 'yyyy-MM-dd');
+              monto = 3500;
+            } else if (tipoPlan === 'quincenal') {
+              fechaFin = format(addDays(hoy, 15), 'yyyy-MM-dd');
+              monto = 7000;
+            } else {
+              fechaFin = format(addMonths(hoy, 1), 'yyyy-MM-dd');
+              monto = 14000;
+            }
+
+            await crearAbono({
+              moto_id: nuevaMoto.id,
+              tipo: tipoPlan,
+              fecha_inicio: fechaInicio,
+              fecha_fin: fechaFin,
+              monto: monto,
+            });
+          }
         }
 
         if (onMotoCreada) onMotoCreada(placa.toUpperCase().trim());
@@ -89,14 +110,14 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
         {/* Header */}
         <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-2xl shadow-sm">
-            {esEdicion ? '✏️' : '🏍️'}
+            {esEdicion ? '✏️' : '👤'}
           </div>
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-tight">
-              {esEdicion ? 'Editar Propietario y Moto' : 'Registrar Moto en el Sistema'}
+              {esEdicion ? 'Editar Trabajador y Moto' : 'Registrar Trabajador y Moto'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {esEdicion ? 'Actualiza los datos de contacto y vehículo' : 'Fundación Funda Amiga — Registro Inmediato'}
+              {esEdicion ? 'Actualiza los datos de contacto y vehículo' : 'Ingresa el nombre para llevar la auditoría exacta en oficina'}
             </p>
           </div>
         </div>
@@ -106,7 +127,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
           {/* Placa Badge & Input */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-              Placa del Vehículo *
+              Placa de la Moto *
             </label>
             <input
               value={placa}
@@ -118,17 +139,18 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
             />
           </div>
 
-          {/* Propietario */}
+          {/* Propietario / Trabajador */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-              Nombre Completo del Propietario / Dueño *
+              Nombre Completo del Trabajador / Conductor *
             </label>
             <input
               value={propietario}
               onChange={(e) => setPropietario(e.target.value)}
-              placeholder="Ej: Kevin Camilo Molina"
-              className="input py-3 font-bold"
+              placeholder="Ej: Carlos Mendoza"
+              className="input py-3 font-bold text-sm"
               required
+              autoFocus
             />
           </div>
 
@@ -136,7 +158,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-                Teléfono / WhatsApp
+                Teléfono / WhatsApp (Opcional)
               </label>
               <input
                 value={telefono}
@@ -147,7 +169,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
             </div>
             <div>
               <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-                Marca de la Moto
+                Marca de la Moto (Opcional)
               </label>
               <input
                 value={marca}
@@ -161,7 +183,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
           {/* Modelo */}
           <div>
             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
-              Modelo / Línea
+              Modelo / Línea (Opcional)
             </label>
             <input
               value={modelo}
@@ -171,50 +193,72 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
             />
           </div>
 
-          {/* Asignar Abono Inicial (solo en creación) */}
+          {/* Asignar Plan Inicial (solo en creación) */}
           {!esEdicion && (
             <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mt-1">
-              <div className="flex items-center justify-between mb-2">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 dark:text-slate-200 text-xs select-none">
-                  <input
-                    type="checkbox"
-                    checked={asignarAbono}
-                    onChange={(e) => setAsignarAbono(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-500 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 focus:ring-emerald-500"
-                  />
-                  <span>Iniciar Conteo de Días (Abono) de una vez</span>
-                </label>
+              <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
+                Selecciona la Modalidad de Pago del Trabajador:
+              </span>
+
+              <div className="grid grid-cols-2 gap-2">
+                
+                {/* Opción 1: Diario */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan('diario')}
+                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                    tipoPlan === 'diario'
+                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-yellow-300 ring-2 ring-amber-500/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span>🟡 Pago Diario</span>
+                  <span className="text-xs font-black text-amber-700 dark:text-yellow-400">$700 COP</span>
+                </button>
+
+                {/* Opción 2: Semanal */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan('semanal')}
+                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                    tipoPlan === 'semanal'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300 ring-2 ring-purple-500/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span>🟣 Semanal (7d)</span>
+                  <span className="text-xs font-black text-purple-600 dark:text-purple-400">$3.500 COP</span>
+                </button>
+
+                {/* Opción 3: Quincenal */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan('quincenal')}
+                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                    tipoPlan === 'quincenal'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span>🗓️ Quincena (15d)</span>
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$7.000 COP</span>
+                </button>
+
+                {/* Opción 4: Mensual */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan('mensual')}
+                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                    tipoPlan === 'mensual'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span>📅 Mes (30d)</span>
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$14.000 COP</span>
+                </button>
+
               </div>
-
-              {asignarAbono && (
-                <div className="grid grid-cols-2 gap-2.5 pt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setTipoAbono('quincenal')}
-                    className={`py-3 px-3 rounded-2xl border text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                      tipoAbono === 'quincenal'
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/30'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <span>🗓️ Quincena (15 días)</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">$7.000 COP</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTipoAbono('mensual')}
-                    className={`py-3 px-3 rounded-2xl border text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                      tipoAbono === 'mensual'
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/30'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <span>📅 Mes (30 días)</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">$14.000 COP</span>
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -232,7 +276,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, onClose
               disabled={cargando}
               className="btn-primary flex-1 py-3.5 text-xs sm:text-sm font-black shadow-lg"
             >
-              <span>💾</span> {cargando ? 'Guardando...' : (esEdicion ? 'Guardar Cambios' : 'Guardar Moto')}
+              <span>💾</span> {cargando ? 'Guardando...' : (esEdicion ? 'Guardar Cambios' : 'Guardar y Registrar Ingreso')}
             </button>
           </div>
 

@@ -22,6 +22,7 @@ export default function Escaner() {
   const [tipoTicket, setTipoTicket] = useState('entrada'); // 'entrada' o 'salida'
 
   const [motoParaEditar, setMotoParaEditar] = useState(null);
+  const [planSeleccionado, setPlanSeleccionado] = useState('diario');
 
   const navigate = useNavigate();
 
@@ -72,18 +73,26 @@ export default function Escaner() {
     }
   };
 
-  // Opción 2: Entrada Visitante por Día ($700 Fijo)
+  // Opción 2: Entrada Pago Diario ($700 Fijo)
   const handleEntradaDia = async (placa, moto_id) => {
+    // Si la moto no está registrada con nombre, abrir registro para pedir el nombre
+    if (!moto_id) {
+      setPlacaInput(placa);
+      setMotoParaEditar(null);
+      setPlanSeleccionado('diario');
+      setShowModalRegistro(true);
+      return;
+    }
+
     setCargando(true);
     try {
       const resp = await registrarEntrada({
-        moto_id: moto_id || null,
+        moto_id: moto_id,
         placa: placa,
         tipo_ingreso: 'dia',
       });
-      setMensaje({ tipo: 'success', texto: '🟡 ¡Ingreso registrado como Visitante por Día ($700 al salir)!' });
+      setMensaje({ tipo: 'success', texto: '🟡 ¡Pago Diario registrado exitosamente ($700 COP)!' });
       buscar(placaInput);
-      // Abrir tiquete de entrada para imprimir o entregar
       if (resp.data) {
         setTicketActual(resp.data);
         setTipoTicket('entrada');
@@ -97,16 +106,24 @@ export default function Escaner() {
 
   // Opción 3: Entrada Temporal Semanal ($3.500)
   const handleEntradaSemana = async (placa, moto_id) => {
+    // Si la moto no está registrada con nombre, abrir registro para pedir el nombre
+    if (!moto_id) {
+      setPlacaInput(placa);
+      setMotoParaEditar(null);
+      setPlanSeleccionado('semanal');
+      setShowModalRegistro(true);
+      return;
+    }
+
     setCargando(true);
     try {
       const resp = await registrarEntrada({
-        moto_id: moto_id || null,
+        moto_id: moto_id,
         placa: placa,
         tipo_ingreso: 'semana',
       });
-      setMensaje({ tipo: 'success', texto: '🟣 ¡Ingreso registrado como Semanal ($3.500 al salir)!' });
+      setMensaje({ tipo: 'success', texto: '🟣 ¡Ingreso Semanal registrado ($3.500 COP)!' });
       buscar(placaInput);
-      // Abrir tiquete de entrada
       if (resp.data) {
         setTicketActual(resp.data);
         setTipoTicket('entrada');
@@ -309,6 +326,7 @@ export default function Escaner() {
         <ModalRegistroRapido
           placaInicial={placaInput}
           motoInicial={motoParaEditar}
+          planPorDefecto={planSeleccionado}
           onClose={() => {
             setShowModalRegistro(false);
             setMotoParaEditar(null);
