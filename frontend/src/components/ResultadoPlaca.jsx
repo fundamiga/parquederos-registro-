@@ -7,6 +7,7 @@ export default function ResultadoPlaca({
   onEntradaDia,
   onEntradaSemana,
   onVerTicket,
+  onEditarMoto,
   onSalida,
   onRegistrar,
   onAbrirAbono,
@@ -139,7 +140,18 @@ export default function ResultadoPlaca({
               <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 <span>👤</span> DATOS PROPIETARIO Y MOTO
               </span>
-              <span className="badge badge-neutral text-[9px]">Registrado</span>
+              <div className="flex items-center gap-1.5">
+                {onEditarMoto && (
+                  <button
+                    onClick={() => onEditarMoto(moto)}
+                    className="text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-1"
+                    title="Editar información de propietario"
+                  >
+                    <span>✏️</span> Editar
+                  </button>
+                )}
+                <span className="badge badge-neutral text-[9px]">Registrado</span>
+              </div>
             </div>
             
             <div className="flex flex-col gap-2 text-xs">

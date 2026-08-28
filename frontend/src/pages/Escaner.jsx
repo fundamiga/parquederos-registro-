@@ -21,6 +21,8 @@ export default function Escaner() {
   const [ticketActual, setTicketActual] = useState(null);
   const [tipoTicket, setTipoTicket] = useState('entrada'); // 'entrada' o 'salida'
 
+  const [motoParaEditar, setMotoParaEditar] = useState(null);
+
   const navigate = useNavigate();
 
   const buscar = async (placa) => {
@@ -279,8 +281,15 @@ export default function Escaner() {
             setTicketActual(entrada);
             setTipoTicket('entrada');
           }}
+          onEditarMoto={(moto) => {
+            setMotoParaEditar(moto);
+            setShowModalRegistro(true);
+          }}
           onSalida={handleSalida}
-          onRegistrar={() => setShowModalRegistro(true)}
+          onRegistrar={() => {
+            setMotoParaEditar(null);
+            setShowModalRegistro(true);
+          }}
           onAbrirAbono={() => setShowModalAbono(true)}
           cargando={cargando}
         />
@@ -295,15 +304,25 @@ export default function Escaner() {
         />
       )}
 
-      {/* Modal Registro Rápido */}
+      {/* Modal Registro Rápido / Edición */}
       {showModalRegistro && (
         <ModalRegistroRapido
           placaInicial={placaInput}
-          onClose={() => setShowModalRegistro(false)}
+          motoInicial={motoParaEditar}
+          onClose={() => {
+            setShowModalRegistro(false);
+            setMotoParaEditar(null);
+          }}
           onMotoCreada={(placaCreada) => {
             setShowModalRegistro(false);
+            setMotoParaEditar(null);
             setPlacaInput(placaCreada);
             buscar(placaCreada);
+          }}
+          onMotoActualizada={() => {
+            setShowModalRegistro(false);
+            setMotoParaEditar(null);
+            buscar(placaInput);
           }}
         />
       )}

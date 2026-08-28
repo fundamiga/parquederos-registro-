@@ -45,9 +45,16 @@ const crear = async (req, res) => {
 
 // PUT /api/motos/:id
 const actualizar = async (req, res) => {
-  const { propietario, telefono, marca, modelo } = req.body;
+  const { placa, propietario, telefono, marca, modelo } = req.body;
+  const updateData = {};
+  if (propietario !== undefined) updateData.propietario = propietario;
+  if (telefono !== undefined) updateData.telefono = telefono;
+  if (marca !== undefined) updateData.marca = marca;
+  if (modelo !== undefined) updateData.modelo = modelo;
+  if (placa) updateData.placa = placa.toUpperCase().replace(/\s/g, '');
+
   const { data, error } = await supabase
-    .from('motos').update({ propietario, telefono, marca, modelo })
+    .from('motos').update(updateData)
     .eq('id', req.params.id).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
