@@ -81,6 +81,28 @@ const verificarVigente = async (req, res) => {
   res.json({ vigente: true, abono: data });
 };
 
+// PUT /api/abonos/:id
+const actualizar = async (req, res) => {
+  const { tipo, fecha_inicio, fecha_fin, monto, observaciones, pagado } = req.body;
+  const updateData = {};
+  if (tipo !== undefined) updateData.tipo = tipo;
+  if (fecha_inicio !== undefined) updateData.fecha_inicio = fecha_inicio;
+  if (fecha_fin !== undefined) updateData.fecha_fin = fecha_fin;
+  if (monto !== undefined) updateData.monto = Number(monto);
+  if (observaciones !== undefined) updateData.observaciones = observaciones;
+  if (pagado !== undefined) updateData.pagado = pagado;
+
+  const { data, error } = await supabase
+    .from('abonos')
+    .update(updateData)
+    .eq('id', req.params.id)
+    .select('*, motos(placa, propietario)')
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+};
+
 // DELETE /api/abonos/:id
 const eliminar = async (req, res) => {
   const { error } = await supabase.from('abonos').delete().eq('id', req.params.id);
@@ -88,4 +110,4 @@ const eliminar = async (req, res) => {
   res.json({ mensaje: 'Abono eliminado' });
 };
 
-module.exports = { listar, crear, verificarVigente, eliminar };
+module.exports = { listar, crear, actualizar, verificarVigente, eliminar };
