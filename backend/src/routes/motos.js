@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const auth = require('../middlewares/authMiddleware');
+const { listar, obtener, crear, actualizar, eliminar } = require('../controllers/motosController');
+router.get('/', auth, listar);
+router.get('/:id', auth, obtener);
+router.post('/', auth, crear);
+router.put('/:id', auth, actualizar);
+router.delete('/:id', auth, eliminar);
+module.exports = router;

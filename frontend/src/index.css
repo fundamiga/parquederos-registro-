@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* DEFAULT LIGHT MODE (Clean, Professional Funda Amiga Theme) */
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans min-h-screen selection:bg-emerald-500 selection:text-white transition-colors duration-200;
+  }
+
+  /* OPTIONAL DARK MODE */
+  .dark body, body.dark {
+    @apply bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.8) 0px, rgba(2, 6, 23, 1) 100%);
+    background-attachment: fixed;
+  }
+}
+
+/* Card Styles */
+.card {
+  @apply bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-6 transition-all duration-200;
+}
+.dark .card {
+  @apply bg-slate-900/85 backdrop-blur-md border-slate-800/80 shadow-xl;
+}
+
+.card-interactive {
+  @apply card hover:shadow-md hover:border-slate-300 active:scale-[0.99];
+}
+.dark .card-interactive {
+  @apply hover:border-slate-700 hover:bg-slate-900/95;
+}
+
+.card-glass {
+  @apply bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-5 shadow-lg;
+}
+.dark .card-glass {
+  @apply bg-slate-900/60 backdrop-blur-xl border-slate-800/60 shadow-2xl;
+}
+
+/* Modern Buttons */
+.btn-primary {
+  @apply bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-5 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.97] transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2;
+}
+
+.btn-secondary {
+  @apply bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-semibold py-3 px-4 rounded-2xl border border-slate-200/70 hover:border-slate-300 active:scale-[0.97] transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2;
+}
+.dark .btn-secondary {
+  @apply bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border-slate-700/70;
+}
+
+.btn-success {
+  @apply bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 px-5 rounded-2xl shadow-sm active:scale-[0.97] transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2;
+}
+
+.btn-danger {
+  @apply bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-3 px-5 rounded-2xl shadow-sm active:scale-[0.97] transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2;
+}
+
+.btn-amber {
+  @apply bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold py-3 px-5 rounded-2xl shadow-sm active:scale-[0.97] transition-all duration-150 disabled:opacity-40 flex items-center justify-center gap-2;
+}
+
+/* Form Controls */
+.input {
+  @apply w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-150 font-medium;
+}
+.dark .input {
+  @apply bg-slate-950/70 border-slate-700/80 text-slate-100 placeholder-slate-500 focus:ring-emerald-500/40;
+}
+
+/* Badges */
+.badge {
+  @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm;
+}
+
+.badge-success {
+  @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+}
+.dark .badge-success {
+  @apply bg-emerald-500/15 text-emerald-400 border-emerald-500/30;
+}
+
+.badge-danger {
+  @apply badge bg-rose-50 text-rose-700 border border-rose-200;
+}
+.dark .badge-danger {
+  @apply bg-rose-500/15 text-rose-400 border-rose-500/30;
+}
+
+.badge-warning {
+  @apply badge bg-amber-50 text-amber-700 border border-amber-200;
+}
+.dark .badge-warning {
+  @apply bg-amber-500/15 text-amber-400 border-amber-500/30;
+}
+
+.badge-info {
+  @apply badge bg-sky-50 text-sky-700 border border-sky-200;
+}
+.dark .badge-info {
+  @apply bg-sky-500/15 text-sky-400 border-sky-500/30;
+}
+
+.badge-neutral {
+  @apply badge bg-slate-100 text-slate-700 border border-slate-200;
+}
+.dark .badge-neutral {
+  @apply bg-slate-800 text-slate-300 border-slate-700;
+}
+
+/* Placa Colombiana Realista */
+.placa-colombiana {
+  background: linear-gradient(180deg, #FDE047 0%, #EAB308 50%, #CA8A04 100%);
+  border: 3px solid #0F172A;
+  box-shadow: 
+    inset 0 2px 4px rgba(255,255,255,0.7),
+    inset 0 -2px 4px rgba(0,0,0,0.3),
+    0 4px 8px -1px rgba(0,0,0,0.2),
+    0 0 0 1px rgba(253, 224, 71, 0.3);
+  letter-spacing: 0.25em;
+  color: #0F172A;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* Animations */
+@keyframes scan {
+  0% { top: 0%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.animate-scan-line {
+  animation: scan 1.8s ease-in-out infinite alternate;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}

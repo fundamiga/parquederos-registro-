@@ -1,0 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const auth = require('../middlewares/authMiddleware');
+const { activos, registrarEntrada, registrarSalida, historial, dashboard, informeDiario } = require('../controllers/parqueaderoController');
+router.get('/activos', auth, activos);
+router.get('/historial', auth, historial);
+router.get('/dashboard', auth, dashboard);
+router.get('/informe-diario', auth, informeDiario);
+router.post('/entrada', auth, registrarEntrada);
+router.post('/salida', auth, registrarSalida);
+module.exports = router;
