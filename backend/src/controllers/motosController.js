@@ -28,7 +28,7 @@ const obtener = async (req, res) => {
 
 // POST /api/motos
 const crear = async (req, res) => {
-  const { placa, propietario, telefono, marca, modelo } = req.body;
+  const { placa, propietario, telefono, marca, modelo, modalidad_pago } = req.body;
   if (!placa || !propietario) return res.status(400).json({ error: 'Placa y propietario son requeridos' });
 
   const placaUpper = placa.toUpperCase().replace(/\s/g, '');
@@ -36,26 +36,51 @@ const crear = async (req, res) => {
   const { data: existe } = await supabase.from('motos').select('id').eq('placa', placaUpper).maybeSingle();
   if (existe) return res.status(409).json({ error: 'Ya existe una moto con esa placa' });
 
-  const { data, error } = await supabase
-    .from('motos').insert([{ placa: placaUpper, propietario, telefono, marca, modelo }])
+  const insertData = { placa: placaUpper, propietario, telefono, marca, modelo };
+  if (modalidad_pago) insertData.modalidad_pago = modalidad_pago;
+
+  let { data, error } = await supabase
+    .from('motos').insert([insertData])
     .select().single();
+
+  if (error && error.message.includes('modalidad_pago')) {
+    // Si la columna modalidad_pago aún no existe en la tabla, insertar sin ella
+    delete insertData.modalidad_pago;
+    const { data: d2, error: e2 } = await supabase
+      .from('motos').insert([insertData])
+      .select().single();
+    if (e2) return res.status(500).json({ error: e2.message });
+    return res.status(201).json(d2);
+  }
+
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 };
 
 // PUT /api/motos/:id
 const actualizar = async (req, res) => {
-  const { placa, propietario, telefono, marca, modelo } = req.body;
+  const { placa, propietario, telefono, marca, modelo, modalidad_pago } = req.body;
   const updateData = {};
   if (propietario !== undefined) updateData.propietario = propietario;
   if (telefono !== undefined) updateData.telefono = telefono;
   if (marca !== undefined) updateData.marca = marca;
   if (modelo !== undefined) updateData.modelo = modelo;
+  if (modalidad_pago !== undefined) updateData.modalidad_pago = modalidad_pago;
   if (placa) updateData.placa = placa.toUpperCase().replace(/\s/g, '');
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('motos').update(updateData)
     .eq('id', req.params.id).select().single();
+
+  if (error && error.message.includes('modalidad_pago')) {
+    delete updateData.modalidad_pago;
+    const { data: d2, error: e2 } = await supabase
+      .from('motos').update(updateData)
+      .eq('id', req.params.id).select().single();
+    if (e2) return res.status(500).json({ error: e2.message });
+    return res.json(d2);
+  }
+
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 };
