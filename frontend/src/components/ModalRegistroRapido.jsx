@@ -4,6 +4,13 @@ import { crearAbono } from '../services/abonosService';
 import { registrarEntrada } from '../services/parqueaderoService';
 import { format, addDays, addMonths } from 'date-fns';
 
+const PRECIOS_DEFAULT = {
+  diario: 700,
+  semanal: 3500,
+  quincenal: 7000,
+  mensual: 14000,
+};
+
 export default function ModalRegistroRapido({ placaInicial, motoInicial, planPorDefecto = 'diario', onClose, onMotoCreada, onMotoActualizada }) {
   const esEdicion = Boolean(motoInicial);
 
@@ -15,13 +22,23 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, planPor
   
   // Opción para asignar plan inicial (diario, semanal, quincenal o mensual)
   const [asignarPlan, setAsignarPlan] = useState(!esEdicion);
-  const [tipoPlan, setTipoPlan] = useState(planPorDefecto || 'diario'); // 'diario', 'semanal', 'quincenal', 'mensual'
+  const [tipoPlan, setTipoPlan] = useState(motoInicial?.modalidad_pago || planPorDefecto || 'diario');
+  const [monto, setMonto] = useState(String(PRECIOS_DEFAULT[planPorDefecto] || 700));
+  const [observaciones, setObservaciones] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  const seleccionarPlan = (tipo) => {
+    setTipoPlan(tipo);
+    setMonto(String(PRECIOS_DEFAULT[tipo] || 700));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!placa.trim() || !propietario.trim()) {
       return alert('La Placa y el Nombre del Trabajador/Propietario son obligatorios');
+    }
+    if (asignarPlan && (!monto || Number(monto) < 0)) {
+      return alert('Ingresa un monto de tarifa válido');
     }
 
     setCargando(true);
@@ -34,44 +51,44 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, planPor
           telefono: telefono.trim(),
           marca: marca.trim(),
           modelo: modelo.trim(),
+          modalidad_pago: tipoPlan,
         });
         if (onMotoActualizada) onMotoActualizada(respMoto.data);
       } else {
-        // 2. Crear nueva moto con nombre
+        // 2. Crear nueva moto con nombre y modalidad
         const respMoto = await crearMoto({
           placa: placa.toUpperCase().trim(),
           propietario: propietario.trim(),
           telefono: telefono.trim(),
           marca: marca.trim(),
           modelo: modelo.trim(),
+          modalidad_pago: tipoPlan,
         });
 
         const nuevaMoto = respMoto.data;
+        const montoCobrado = Number(monto);
 
-        // 3. Asignar el plan seleccionado
+        // 3. Asignar el plan seleccionado con el precio editable/excepcional
         if (asignarPlan && nuevaMoto?.id) {
           if (tipoPlan === 'diario') {
-            // Registrar entrada y cobro de día ($700) con nombre
+            // Registrar entrada con cobro personalizado
             await registrarEntrada({
               moto_id: nuevaMoto.id,
               placa: nuevaMoto.placa,
               tipo_ingreso: 'dia',
+              cobro_extra: montoCobrado,
             });
           } else {
             const hoy = new Date();
             const fechaInicio = format(hoy, 'yyyy-MM-dd');
             let fechaFin;
-            let monto;
 
             if (tipoPlan === 'semanal') {
               fechaFin = format(addDays(hoy, 7), 'yyyy-MM-dd');
-              monto = 3500;
             } else if (tipoPlan === 'quincenal') {
               fechaFin = format(addDays(hoy, 15), 'yyyy-MM-dd');
-              monto = 7000;
             } else {
               fechaFin = format(addMonths(hoy, 1), 'yyyy-MM-dd');
-              monto = 14000;
             }
 
             await crearAbono({
@@ -79,7 +96,8 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, planPor
               tipo: tipoPlan,
               fecha_inicio: fechaInicio,
               fecha_fin: fechaFin,
-              monto: monto,
+              monto: montoCobrado,
+              observaciones: observaciones.trim() || null,
             });
           }
         }
@@ -117,7 +135,7 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, planPor
               {esEdicion ? 'Editar Trabajador y Moto' : 'Registrar Trabajador y Moto'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {esEdicion ? 'Actualiza los datos de contacto y vehículo' : 'Ingresa el nombre para llevar la auditoría exacta en oficina'}
+              {esEdicion ? 'Actualiza los datos de contacto y vehículo' : 'Ingresa el nombre y define su tarifa personalizada'}
             </p>
           </div>
         </div>
@@ -193,74 +211,111 @@ export default function ModalRegistroRapido({ placaInicial, motoInicial, planPor
             />
           </div>
 
-          {/* Asignar Plan Inicial (solo en creación) */}
-          {!esEdicion && (
-            <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mt-1">
-              <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
-                Selecciona la Modalidad de Pago del Trabajador:
-              </span>
+          {/* Asignar Plan y Tarifa Personalizada */}
+          <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mt-1 flex flex-col gap-3">
+            <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+              Selecciona la Modalidad de Pago del Trabajador:
+            </span>
 
-              <div className="grid grid-cols-2 gap-2">
-                
-                {/* Opción 1: Diario */}
-                <button
-                  type="button"
-                  onClick={() => setTipoPlan('diario')}
-                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                    tipoPlan === 'diario'
-                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-yellow-300 ring-2 ring-amber-500/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <span>🟡 Pago Diario</span>
-                  <span className="text-xs font-black text-amber-700 dark:text-yellow-400">$700 COP</span>
-                </button>
+            {/* 4 Botones de Selección */}
+            <div className="grid grid-cols-2 gap-2">
+              
+              {/* Opción 1: Diario */}
+              <button
+                type="button"
+                onClick={() => seleccionarPlan('diario')}
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  tipoPlan === 'diario'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-yellow-300 ring-2 ring-amber-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <span>🟡 Pago Diario</span>
+                <span className="text-xs font-black text-amber-700 dark:text-yellow-400">$700 COP</span>
+              </button>
 
-                {/* Opción 2: Semanal */}
-                <button
-                  type="button"
-                  onClick={() => setTipoPlan('semanal')}
-                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                    tipoPlan === 'semanal'
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300 ring-2 ring-purple-500/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <span>🟣 Semanal (7d)</span>
-                  <span className="text-xs font-black text-purple-600 dark:text-purple-400">$3.500 COP</span>
-                </button>
+              {/* Opción 2: Semanal */}
+              <button
+                type="button"
+                onClick={() => seleccionarPlan('semanal')}
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  tipoPlan === 'semanal'
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300 ring-2 ring-purple-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <span>🟣 Semanal (7d)</span>
+                <span className="text-xs font-black text-purple-600 dark:text-purple-400">$3.500 COP</span>
+              </button>
 
-                {/* Opción 3: Quincenal */}
-                <button
-                  type="button"
-                  onClick={() => setTipoPlan('quincenal')}
-                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                    tipoPlan === 'quincenal'
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <span>🗓️ Quincena (15d)</span>
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$7.000 COP</span>
-                </button>
+              {/* Opción 3: Quincenal */}
+              <button
+                type="button"
+                onClick={() => seleccionarPlan('quincenal')}
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  tipoPlan === 'quincenal'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <span>🗓️ Quincena (15d)</span>
+                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$7.000 COP</span>
+              </button>
 
-                {/* Opción 4: Mensual */}
-                <button
-                  type="button"
-                  onClick={() => setTipoPlan('mensual')}
-                  className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
-                    tipoPlan === 'mensual'
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <span>📅 Mes (30d)</span>
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$14.000 COP</span>
-                </button>
+              {/* Opción 4: Mensual */}
+              <button
+                type="button"
+                onClick={() => seleccionarPlan('mensual')}
+                className={`py-2.5 px-2 rounded-2xl border-2 text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+                  tipoPlan === 'mensual'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <span>📅 Mes (30d)</span>
+                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">$14.000 COP</span>
+              </button>
 
+            </div>
+
+            {/* PRECIO EDITABLE PARA CASOS EXCEPCIONALES */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  💰 Tarifa a Cobrar ($ COP) — Modificable:
+                </label>
+                <span className="text-[10px] text-amber-600 dark:text-yellow-400 font-bold">
+                  ✏️ Modifica si hay excepción
+                </span>
+              </div>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+                <input
+                  type="number"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  placeholder="7000"
+                  className="input pl-9 font-mono text-xl font-black text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900 border-2 border-emerald-500/50"
+                  required
+                />
               </div>
             </div>
-          )}
+
+            {/* NOTA / MOTIVO DE EXCEPCIÓN */}
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                Nota de Excepción (Opcional):
+              </label>
+              <input
+                type="text"
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                placeholder="Ej: Descuento autorizado por administración"
+                className="input py-2 text-xs"
+              />
+            </div>
+
+          </div>
 
           {/* Submit */}
           <div className="flex gap-2.5 pt-2">
