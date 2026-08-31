@@ -10,7 +10,15 @@ const listar = async (req, res) => {
   if (moto_id) query = query.eq('moto_id', moto_id);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+
+  const procesados = (data || []).map((ab) => {
+    if (ab.observaciones && ab.observaciones.includes('SEMANAL')) {
+      return { ...ab, tipo: 'semanal' };
+    }
+    return ab;
+  });
+
+  res.json(procesados);
 };
 
 // POST /api/abonos
@@ -93,6 +101,9 @@ const verificarVigente = async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.json({ vigente: false, abono: null });
+  if (data.observaciones && data.observaciones.includes('SEMANAL')) {
+    data.tipo = 'semanal';
+  }
   res.json({ vigente: true, abono: data });
 };
 

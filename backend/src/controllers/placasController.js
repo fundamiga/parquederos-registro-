@@ -120,6 +120,9 @@ const buscar = async (req, res) => {
     .limit(1);
 
   const ultimoAbono = ultimosAbonos?.[0] || null;
+  if (ultimoAbono && ultimoAbono.observaciones && ultimoAbono.observaciones.includes('SEMANAL')) {
+    ultimoAbono.tipo = 'semanal';
+  }
   const hoyStr = new Date().toISOString().slice(0, 10);
   const hoyDate = new Date(hoyStr);
 
