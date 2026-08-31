@@ -3,7 +3,7 @@ const { supabase } = require('../db/supabase');
 // GET /api/motos
 const listar = async (req, res) => {
   const { search } = req.query;
-  let query = supabase.from('motos').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('motos').select('*, abonos(*)').order('created_at', { ascending: false });
   
   if (search && search.trim()) {
     const s = search.trim();
