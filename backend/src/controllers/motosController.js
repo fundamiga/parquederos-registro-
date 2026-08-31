@@ -34,7 +34,33 @@ const crear = async (req, res) => {
   const placaUpper = placa.toUpperCase().replace(/\s/g, '');
 
   const { data: existe } = await supabase.from('motos').select('id').eq('placa', placaUpper).maybeSingle();
-  if (existe) return res.status(409).json({ error: 'Ya existe una moto con esa placa' });
+  if (existe) {
+    // Si ya existe la placa, actualizar con los nuevos datos (UPSERT transparente)
+    const updateData = { propietario, telefono, marca, modelo };
+    if (modalidad_pago) updateData.modalidad_pago = modalidad_pago;
+
+    let { data: updData, error: updErr } = await supabase
+      .from('motos')
+      .update(updateData)
+      .eq('id', existe.id)
+      .select()
+      .single();
+
+    if (updErr && updErr.message.includes('modalidad_pago')) {
+      delete updateData.modalidad_pago;
+      const { data: d2, error: e2 } = await supabase
+        .from('motos')
+        .update(updateData)
+        .eq('id', existe.id)
+        .select()
+        .single();
+      if (e2) return res.status(500).json({ error: e2.message });
+      return res.status(200).json(d2);
+    }
+
+    if (updErr) return res.status(500).json({ error: updErr.message });
+    return res.status(200).json(updData);
+  }
 
   const insertData = { placa: placaUpper, propietario, telefono, marca, modelo };
   if (modalidad_pago) insertData.modalidad_pago = modalidad_pago;
