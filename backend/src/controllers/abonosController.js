@@ -39,21 +39,36 @@ const crear = async (req, res) => {
   const notaModalidad = modalidadPago === 'adelantado' ? '[PAGADO ADELANTADO]' : '[PAGA AL VENCER]';
   insertData.observaciones = observaciones ? `${notaModalidad} ${observaciones}` : notaModalidad;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('abonos')
     .insert([insertData])
     .select('*, motos(placa, propietario)')
     .single();
 
   if (error) {
-    // Si hora_pago no existe todavía en la tabla, insertar sin ella
+    // Si falla por el check constraint de Postgres (que solo tenía mensual/quincenal)
+    if (error.message.includes('abonos_tipo_check') || error.message.includes('violates check constraint')) {
+      const fallbackData = { ...insertData, tipo: 'quincenal' };
+      fallbackData.observaciones = `[PLAN SEMANAL] ${fallbackData.observaciones || ''}`.trim();
+      const { data: dFb, error: eFb } = await supabase
+        .from('abonos')
+        .insert([fallbackData])
+        .select('*, motos(placa, propietario)')
+        .single();
+      if (eFb) return res.status(500).json({ error: eFb.message });
+      if (dFb) dFb.tipo = tipo;
+      return res.status(201).json(dFb);
+    }
+
+    // Si hora_pago o observaciones no existen todavía en la tabla, insertar sin ellas
     if (error.message.includes('hora_pago') || error.message.includes('observaciones')) {
       const { data: data2, error: error2 } = await supabase
         .from('abonos')
-        .insert([{ moto_id, tipo, fecha_inicio, fecha_fin, monto, pagado: true }])
+        .insert([{ moto_id, tipo: tipo === 'semanal' ? 'quincenal' : tipo, fecha_inicio, fecha_fin, monto, pagado: true }])
         .select('*, motos(placa, propietario)')
         .single();
       if (error2) return res.status(500).json({ error: error2.message });
+      if (data2) data2.tipo = tipo;
       return res.status(201).json(data2);
     }
     return res.status(500).json({ error: error.message });
@@ -92,12 +107,25 @@ const actualizar = async (req, res) => {
   if (observaciones !== undefined) updateData.observaciones = observaciones;
   if (pagado !== undefined) updateData.pagado = pagado;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('abonos')
     .update(updateData)
     .eq('id', req.params.id)
     .select('*, motos(placa, propietario)')
     .single();
+
+  if (error && (error.message.includes('abonos_tipo_check') || error.message.includes('violates check constraint'))) {
+    updateData.tipo = 'quincenal';
+    const { data: dFb, error: eFb } = await supabase
+      .from('abonos')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select('*, motos(placa, propietario)')
+      .single();
+    if (eFb) return res.status(500).json({ error: eFb.message });
+    if (dFb) dFb.tipo = tipo;
+    return res.json(dFb);
+  }
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
