@@ -113,10 +113,10 @@ export default function ModalTicket({ entrada, tipo = 'entrada', onClose }) {
             </div>
           </div>
 
-          {/* Tarifa a Cobrar / Cobrada */}
+          {/* Tarifa Registrada */}
           <div className="border-2 border-slate-900 rounded-2xl p-3 bg-yellow-50 text-center">
             <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest block">
-              {tipo === 'entrada' ? 'VALOR A PAGAR AL SALIR' : 'TOTAL PAGADO Y RECIBIDO'}
+              {tipo === 'entrada' ? 'VALOR DE LA TARIFA REGISTRADA' : 'TOTAL REGISTRADO'}
             </span>
             <span className="text-2xl font-black text-slate-950 font-mono block mt-0.5">
               ${(entrada.cobro_extra || 0).toLocaleString()} COP
@@ -125,11 +125,7 @@ export default function ModalTicket({ entrada, tipo = 'entrada', onClose }) {
 
           {/* Footer Note */}
           <div className="border-t-2 border-dashed border-slate-300 pt-2 text-[10px] text-slate-500 font-bold leading-tight">
-            {tipo === 'entrada' ? (
-              <p>⚠️ Conserve este tiquete. Debe presentarlo al guardia para autorizar su salida del parqueadero.</p>
-            ) : (
-              <p>✅ ¡Gracias por su visita! Salida autorizada por Fundación Funda Amiga.</p>
-            )}
+            <p>✅ Registro oficial de parqueadero — Fundación Funda Amiga (Cartón de Colombia).</p>
           </div>
 
         </div>

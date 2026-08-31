@@ -156,8 +156,8 @@ export default function Parqueadero() {
                   </span>
                 </div>
                 {item.cobro_extra > 0 && (
-                  <div className="bg-amber-950/50 border border-amber-500/40 p-2 rounded-xl text-center text-yellow-300 font-black text-xs mt-1">
-                    Tarifa Visitante por Día: ${item.cobro_extra} COP
+                  <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-500/40 p-2 rounded-xl text-center text-amber-800 dark:text-yellow-300 font-bold text-xs mt-1">
+                    Modalidad {item.cobro_extra === 3500 ? 'Semanal' : 'Diaria'}: ${item.cobro_extra.toLocaleString()} COP
                   </div>
                 )}
               </div>
@@ -166,9 +166,9 @@ export default function Parqueadero() {
               <button
                 onClick={() => handleSalida(item.id, item.motos?.placa, item.cobro_extra)}
                 disabled={cargando}
-                className="btn-danger w-full py-3 text-xs font-black shadow-lg"
+                className="btn-secondary hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 w-full py-3 text-xs font-bold transition-colors"
               >
-                <span>⬅️</span> {item.cobro_extra > 0 ? `Cobrar $${item.cobro_extra} y Salir` : 'Registrar Salida'}
+                <span>🚪</span> Registrar Salida
               </button>
             </div>
           ))}
