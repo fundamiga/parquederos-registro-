@@ -185,12 +185,24 @@ export default function Escaner() {
           </p>
         </div>
 
-        <button
-          onClick={() => navigate('/motos')}
-          className="btn-secondary self-start sm:self-auto text-xs sm:text-sm font-bold py-2.5 px-4"
-        >
-          <span>🏍️</span> Motos Registradas
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setMotoParaEditar(null);
+              setShowModalRegistro(true);
+            }}
+            className="btn-secondary text-xs sm:text-sm font-bold py-2.5 px-3.5 flex items-center gap-1.5 shadow-xs hover:border-emerald-500/50"
+            title="Registrar moto o trabajador de forma manual sin usar la cámara"
+          >
+            <span>✍️</span> Registrar Manual
+          </button>
+          <button
+            onClick={() => navigate('/motos')}
+            className="btn-secondary text-xs sm:text-sm font-bold py-2.5 px-4"
+          >
+            <span>🏍️</span> Motos Registradas
+          </button>
+        </div>
       </div>
 
       {/* Main Grid */}
@@ -213,9 +225,20 @@ export default function Escaner() {
         <div className="lg:col-span-5 flex flex-col gap-3">
           <div className="card p-5 bg-white dark:bg-slate-900/90 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
             <div>
-              <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
-                <span>🔍</span> Búsqueda Manual / Placa
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span>🔍</span> Búsqueda Manual / Placa
+                </h2>
+                <button
+                  onClick={() => {
+                    setMotoParaEditar(null);
+                    setShowModalRegistro(true);
+                  }}
+                  className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                >
+                  <span>✍️</span> Registrar Manual
+                </button>
+              </div>
 
               <div className="flex flex-col gap-3">
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -266,6 +289,16 @@ export default function Escaner() {
                       <span>Consultar Placa</span>
                     </>
                   )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMotoParaEditar(null);
+                    setShowModalRegistro(true);
+                  }}
+                  className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 py-2.5 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-1.5 w-full bg-slate-50/50 dark:bg-slate-950/40 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20"
+                >
+                  <span>✍️</span> Registrar Moto / Trabajador Manual
                 </button>
               </div>
             </div>
