@@ -137,6 +137,20 @@ const buscar = async (req, res) => {
     const finDate = new Date(ultimoAbono.fecha_fin);
     const inicioDate = new Date(ultimoAbono.fecha_inicio);
     const msPorDia = 1000 * 60 * 60 * 24;
+    const duracionTotal = Math.round((finDate - inicioDate) / msPorDia);
+
+    // Deducir con total precisión si es semanal, quincenal o mensual
+    if (
+      duracionTotal <= 8 ||
+      ultimoAbono.monto === 3500 ||
+      (ultimoAbono.observaciones && ultimoAbono.observaciones.includes('SEMANAL'))
+    ) {
+      ultimoAbono.tipo = 'semanal';
+    } else if (duracionTotal > 20 || ultimoAbono.monto === 14000 || ultimoAbono.tipo === 'mensual') {
+      ultimoAbono.tipo = 'mensual';
+    } else {
+      ultimoAbono.tipo = 'quincenal';
+    }
 
     diasTranscurridos = Math.max(0, Math.floor((hoyDate - inicioDate) / msPorDia));
     
@@ -144,14 +158,15 @@ const buscar = async (req, res) => {
       abonoVigente = true;
       diasRestantes = Math.ceil((finDate - hoyDate) / msPorDia);
       if (diasRestantes <= 2) {
-        mensajeAlarma = `⏳ Aviso: El abono vence pronto (le quedan ${diasRestantes} días).`;
+        mensajeAlarma = `⏳ Aviso: El plan ${ultimoAbono.tipo.toUpperCase()} vence pronto (le quedan ${diasRestantes} días).`;
       }
     } else {
-      // SOLO aquí salta la alarma roja: cuando cumplió los 15 o 30 días y está vencido
+      // SOLO aquí salta la alarma roja: cuando cumplió sus días y está vencido
       abonoVigente = false;
       alarma = true;
       diasVencido = Math.ceil((hoyDate - finDate) / msPorDia);
-      mensajeAlarma = `🚨 ALARMA: Abono ${ultimoAbono.tipo.toUpperCase()} VENCIDO hace ${diasVencido} días (Cumplió su período el ${ultimoAbono.fecha_fin}). Cobrar renovación ($${ultimoAbono.tipo === 'quincenal' ? '7.000' : '14.000'}).`;
+      const tarifaRenovacion = ultimoAbono.tipo === 'semanal' ? '3.500' : ultimoAbono.tipo === 'quincenal' ? '7.000' : '14.000';
+      mensajeAlarma = `🚨 ALARMA: Plan ${ultimoAbono.tipo.toUpperCase()} VENCIDO hace ${diasVencido} días (Cumplió su período el ${ultimoAbono.fecha_fin}). Cobrar renovación ($${tarifaRenovacion}).`;
     }
   } else {
     // Si apenas se registró o no tiene abono previo: NO es alarma de vencimiento, es solo estado pendiente

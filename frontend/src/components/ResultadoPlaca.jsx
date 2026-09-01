@@ -29,10 +29,26 @@ export default function ResultadoPlaca({
     dias_vencido,
   } = resultado;
 
-  const estaAdentro = Boolean(entrada_activa);
+  // Deducir con total precisión si el plan es semanal (7 días), quincenal (15 días) o mensual (30 días)
+  const duracionDias = ultimo_abono
+    ? Math.round((new Date(ultimo_abono.fecha_fin) - new Date(ultimo_abono.fecha_inicio)) / (1000 * 60 * 60 * 24))
+    : 0;
 
-  // Modalidad del trabajador (si tiene registrada en moto o deducida del abono)
-  const modalidadTrabajador = moto?.modalidad_pago || (ultimo_abono ? ultimo_abono.tipo : 'diario');
+  const esSemanal =
+    ultimo_abono?.tipo === 'semanal' ||
+    (duracionDias > 0 && duracionDias <= 8) ||
+    ultimo_abono?.monto === 3500 ||
+    ultimo_abono?.observaciones?.includes('SEMANAL') ||
+    moto?.modalidad_pago === 'semanal';
+
+  const esMensual =
+    ultimo_abono?.tipo === 'mensual' ||
+    duracionDias > 20 ||
+    ultimo_abono?.monto === 14000 ||
+    moto?.modalidad_pago === 'mensual';
+
+  const planReal = esSemanal ? 'semanal' : esMensual ? 'mensual' : ultimo_abono ? 'quincenal' : (moto?.modalidad_pago || 'diario');
+  const modalidadTrabajador = planReal;
 
   // Cálculo de tiempo transcurrido adentro (si aplica)
   const tiempoPermanencia = () => {
@@ -212,7 +228,7 @@ export default function ResultadoPlaca({
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 font-bold">• Duración del Plan:</span>
                   <span className="font-black text-slate-900 dark:text-slate-100 capitalize">
-                    {ultimo_abono.tipo === 'mensual' ? '📅 Mensual (30 días)' : ultimo_abono.tipo === 'semanal' ? '🟣 Semanal (7 días)' : '🗓️ Quincenal (15 días)'}
+                    {planReal === 'mensual' ? '📅 Mensual (30 días)' : planReal === 'semanal' ? '🟣 Semanal (7 días)' : '🗓️ Quincenal (15 días)'}
                   </span>
                 </div>
 
