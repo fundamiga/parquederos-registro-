@@ -34,6 +34,7 @@ export default function Abonos() {
   const [abonoAEditar, setAbonoAEditar] = useState(null);
   const [filtroMoto, setFiltroMoto] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [cargando, setCargando] = useState(false);
   const [cargandoEdicion, setCargandoEdicion] = useState(false);
 
   // Formulario de edición de abono
@@ -46,12 +47,15 @@ export default function Abonos() {
   });
 
   const cargar = async () => {
+    setCargando(true);
     try {
       const [abRes, moRes] = await Promise.all([listarAbonos(), listarMotos()]);
       setAbonos(abRes.data || []);
       setMotos(moRes.data || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setCargando(false);
     }
   };
 
