@@ -12,7 +12,13 @@ const listar = async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   const procesados = (data || []).map((ab) => {
-    if (ab.observaciones && ab.observaciones.includes('SEMANAL')) {
+    const duracion = Math.round((new Date(ab.fecha_fin) - new Date(ab.fecha_inicio)) / (1000 * 60 * 60 * 24));
+    if (
+      ab.tipo === 'semanal' ||
+      ab.monto === 3500 ||
+      (duracion > 0 && duracion <= 8) ||
+      (ab.observaciones && ab.observaciones.includes('SEMANAL'))
+    ) {
       return { ...ab, tipo: 'semanal' };
     }
     return ab;
@@ -101,7 +107,13 @@ const verificarVigente = async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.json({ vigente: false, abono: null });
-  if (data.observaciones && data.observaciones.includes('SEMANAL')) {
+  const duracion = Math.round((new Date(data.fecha_fin) - new Date(data.fecha_inicio)) / (1000 * 60 * 60 * 24));
+  if (
+    data.tipo === 'semanal' ||
+    data.monto === 3500 ||
+    (duracion > 0 && duracion <= 8) ||
+    (data.observaciones && data.observaciones.includes('SEMANAL'))
+  ) {
     data.tipo = 'semanal';
   }
   res.json({ vigente: true, abono: data });
